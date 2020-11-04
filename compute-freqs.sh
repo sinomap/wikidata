@@ -5,10 +5,18 @@ set -euo pipefail
 _md5() {
   local path="$1"
   local -n _checksum="$2"
-  if which md5 >/dev/null; then
+  if type md5 &>/dev/null; then
     _checksum="$(md5 -q "$path")"
   else
     _checksum="$(md5sum "$path" | awk '{print $1}')"
+  fi
+}
+
+_bunzip() {
+  if type pbunzip2 &>/dev/null; then
+    pbunzip2
+  else
+    bunzip2
   fi
 }
 
@@ -50,10 +58,10 @@ bunzip() {
   local xml_path="$2"
 
   echo "Decompressing bz2 file..."
-  if which pv > /dev/null && which pbunzip2 > /dev/null; then
-    pv "$bz2_path" | pbunzip2 > "$xml_path"
+  if type pv &>/dev/null; then
+    pv "$bz2_path" | _bunzip > "$xml_path"
   else
-    bunzip2 < "$bz2_path" > "$xml_path"
+    _bunzip < "$bz2_path" > "$xml_path"
   fi
 }
 
@@ -62,8 +70,9 @@ extract() {
   local extract_path="$2"
 
   echo "Extracting articles..."
-  python -m wikiextractor.WikiExtractor --no_templates --json -o "$extract_path" "$xml_path" 2>&1 \
-    | (grep '^\S*0000\s' || true) # Limit progress to every 10000th article
+  # Limit progress to every 10000th article
+  vendor/WikiExtractor.py --no_templates --json -o "$extract_path" "$xml_path" 2>&1 \
+    | awk '{if ($1 ~ /.*0000/ || $1 !~ /INFO.*/) {print $0}}'
 }
 
 compute-freqs() {
@@ -77,7 +86,7 @@ compute-freqs() {
 }
 
 dumpspec="$1"
-task="${2:-all}"
+cmd="${2:-all}"
 
 lang="${dumpspec:0:2}"
 base_tmp_dir="tmp/$dumpspec"
@@ -87,8 +96,7 @@ extract_path="$base_tmp_dir/extracted"
 out_path="out/$dumpspec/wf.json"
 
 
-
-case "$task" in
+case "$cmd" in
   download|all)
     file-data "$dumpspec" file_url file_md5
     download "$file_url" "$file_md5" "$bz2_path"
@@ -101,5 +109,9 @@ case "$task" in
     ;;&
   compute|all)
     compute-freqs "$lang" "$extract_path" "$out_path"
+    ;;
+  *)
+    echo "Unknown command: $cmd"
+    exit 1
     ;;
 esac

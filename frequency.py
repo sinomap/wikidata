@@ -9,8 +9,19 @@ import fugashi
 from pyvi import ViTokenizer, ViPosTagger
 
 
+class LazyFugashiTagger(fugashi.Tagger):
+    '''A lazy fugashi.Tagger that doesn't try to use Mecab, etc until first called'''
+    def __init__(self):
+        self.ready = False
+
+    def __call__(self, text):
+        if not self.ready:
+            super().__init__()
+        return super().__call__(text)
+
+
 # Needs to be global (apparently) for pickling
-FUGASHI_TAGGER = fugashi.Tagger()
+FUGASHI_TAGGER = LazyFugashiTagger()
 
 
 def jsonl_paths(root_dir):

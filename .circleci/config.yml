@@ -1,5 +1,20 @@
 version: 2.1
 jobs:
+  ja:
+    docker:
+      - image: circleci/python:3.8.5
+    steps:
+      - checkout
+      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2 mecab
+      - run: pip install -r requirements.txt
+      - run: python -m unidic download 1.0.2
+      - run: ./compute-freqs.sh jawiki/20200820 download
+      - run: ./compute-freqs.sh jawiki/20200820 bunzip
+      - run: ./compute-freqs.sh jawiki/20200820 extract
+      - run: ./compute-freqs.sh jawiki/20200820 compute
+      - run: shopt -s globstar && cp out/**/*.json jwf.json
+      - store_artifacts:
+          path: jwf.json
   vi:
     docker:
       - image: circleci/python:3.8.5
@@ -11,7 +26,11 @@ jobs:
       - run: ./compute-freqs.sh viwiki/20200820 bunzip
       - run: ./compute-freqs.sh viwiki/20200820 extract
       - run: ./compute-freqs.sh viwiki/20200820 compute
+      - run: shopt -s globstar && cp out/**/*.json vwf.json
+      - store_artifacts:
+          path: vwf.json
 workflows:
   all:
     jobs:
+      - ja
       - vi

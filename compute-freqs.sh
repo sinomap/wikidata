@@ -110,6 +110,9 @@ case "$cmd" in
   compute|all)
     compute-freqs "$lang" "$extract_path" "$out_path"
     ;;
+  download|bunzip|extract)
+    exit 0
+    ;;
   *)
     echo "Unknown command: $cmd"
     exit 1

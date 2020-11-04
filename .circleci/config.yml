@@ -5,11 +5,12 @@ jobs:
       - image: circleci/python:3.8.5
     steps:
       - checkout
+      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2
       - run: pip install -r requirements.txt
-      - run: ./compute-freqs.sh sgwiki/20201101 download
-      - run: ./compute-freqs.sh sgwiki/20201101 bunzip
-      - run: ./compute-freqs.sh sgwiki/20201101 extract
-      - run: ./compute-freqs.sh sgwiki/20201101 compute
+      - run: ./compute-freqs.sh viwiki/20200820 download
+      - run: ./compute-freqs.sh viwiki/20200820 bunzip
+      - run: ./compute-freqs.sh viwiki/20200820 extract
+      - run: ./compute-freqs.sh viwiki/20200820 compute
 workflows:
   all:
     jobs:

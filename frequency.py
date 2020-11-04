@@ -17,6 +17,7 @@ class LazyFugashiTagger(fugashi.Tagger):
     def __call__(self, text):
         if not self.ready:
             super().__init__()
+            self.ready = True
         return super().__call__(text)
 
 

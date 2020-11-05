@@ -2,7 +2,7 @@ version: 2.1
 commands:
   deps:
     steps:
-      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2 mecab
+      - run: sudo apt-get update; sudo apt-get install -y pv mecab
       - run: pip install -r requirements.txt
   compute-freqs:
     parameters:

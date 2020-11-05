@@ -64,9 +64,12 @@ jobs:
 workflows:
   release:
     jobs:
-      - sg:
+      - ja:
+          <<: *tag-filter
+      - vi:
           <<: *tag-filter
       - gh-release:
           <<: *tag-filter
           requires:
-            - sg
+            - ja
+            - vi

@@ -3,6 +3,7 @@ from collections import Counter
 from itertools import islice
 import json
 import os
+import string
 
 from pathos.pools import ProcessPool
 import fugashi
@@ -41,7 +42,7 @@ def file_counts(path, token_fn):
 
 def dumb_tokenize(s):
     '''Useful for testing'''
-    return [word.lower() for word in s.split(' ')]
+    return [word.lower().strip(string.punctuation + string.whitespace) for word in s.split(' ')]
 
 
 def ja_tokenize(s):
@@ -66,7 +67,7 @@ def word_freqs(root_dir, token_fn, limit=None):
             nth = i + 1
             if nth % 100 == 0:
                 print('Processed %04d files out of %04d' % (nth, len(paths)))
-    return aggregate
+    return {k: v for (k,v) in aggregate.items() if v >= 3}
 
 
 if __name__ == '__main__':

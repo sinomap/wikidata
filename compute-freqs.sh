@@ -86,6 +86,16 @@ compute-freqs() {
   ./frequency.py "$lang" "$root_dir" "$out_path"
 }
 
+compress() {
+  local out_path="$1"
+
+  echo "Compressing output..."
+  local checksum
+  zip "$out_path.zip" "$out_path"
+  _md5 "$out_path.zip" checksum
+  echo "$checksum" > "$out_path.zip.md5"
+}
+
 parse-arg() {
   local arg="$1"
   local -n _dumpspec="$2"
@@ -108,7 +118,7 @@ base_tmp_dir="tmp/$dumpspec"
 xml_path="$base_tmp_dir/dump.xml"
 bz2_path="$xml_path.bz2"
 extract_path="$base_tmp_dir/extracted"
-out_path="out/$dumpspec/wf.json"
+out_path="out/$lang-wf.json"
 
 
 case "$cmd" in
@@ -124,6 +134,7 @@ case "$cmd" in
     ;;&
   compute|all)
     compute-freqs "$lang" "$extract_path" "$out_path"
+    compress "$out_path"
     ;;
   download|bunzip|extract)
     exit 0

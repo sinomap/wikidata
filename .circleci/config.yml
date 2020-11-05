@@ -1,4 +1,7 @@
 version: 2.1
+anchors: &tag-filter {filters: {tags: {only: /.*/}}}
+orbs:
+  github-release: h-matsuo/github-release@0.1.3
 commands:
   deps:
     steps:
@@ -13,9 +16,10 @@ commands:
       - run: ./compute-freqs.sh <<parameters.lang>> bunzip
       - run: ./compute-freqs.sh <<parameters.lang>> extract
       - run: ./compute-freqs.sh <<parameters.lang>> compute
-      - run: shopt -s globstar && cp out/**/*.json <<parameters.lang>>-wf.json
-      - store_artifacts:
-          path: <<parameters.lang>>-wf.json
+      - persist_to_workspace:
+          root: out
+          paths:
+            - "*.zip*"
 jobs:
   ja:
     docker:
@@ -42,9 +46,24 @@ jobs:
       - deps
       - compute-freqs:
           lang: sg
+  gh-release:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - checkout
+      - attach_workspace:
+          at: out
+      - github-release/create:
+          tag: $CIRCLE_TAG
+          title: Version $CIRCLE_TAG
+          description: This release is version $CIRCLE_TAG.
+          file-path: out
 workflows:
-  all:
+  release:
     jobs:
-      - ja
-      - vi
-      - sg
+      - sg:
+          <<: *tag-filter
+      - gh-release:
+          <<: *tag-filter
+          requires:
+            - sg

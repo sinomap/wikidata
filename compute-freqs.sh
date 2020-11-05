@@ -13,10 +13,12 @@ _md5() {
 }
 
 _bunzip() {
-  if type pbunzip2 &>/dev/null; then
-    pbunzip2
+  if type pbzip2 &>/dev/null; then
+    echo "Using pbzip2..." >&2
+    pbzip2 -d
   else
-    bunzip2
+    echo "Using bzip2..." >&2
+    bzip2 -d
   fi
 }
 
@@ -70,9 +72,8 @@ extract() {
   local extract_path="$2"
 
   echo "Extracting articles..."
-  # Limit progress to every 10000th article
   vendor/WikiExtractor.py --no_templates --json -o "$extract_path" "$xml_path" 2>&1 \
-    | awk '{if ($1 ~ /.*0000/ || $1 !~ /INFO.*/) {print $0}}'
+    | egrep -v "INFO: [0-9]+"
 }
 
 compute-freqs() {
@@ -85,7 +86,21 @@ compute-freqs() {
   ./frequency.py "$lang" "$root_dir" "$out_path"
 }
 
-dumpspec="$1"
+parse-arg() {
+  local arg="$1"
+  local -n _dumpspec="$2"
+  if [[ $arg =~ .*wiki/[0-9]+ ]]; then
+    _dumpspec="$arg"
+    return
+  elif _dumpspec="$(jq -er ".$arg" < manifest.json)"; then
+    return
+  else
+    echo "Invalid dumpspec: $arg"
+    return 1
+  fi
+}
+
+parse-arg "$1" dumpspec
 cmd="${2:-all}"
 
 lang="${dumpspec:0:2}"

@@ -58,6 +58,7 @@ def word_freqs(root_dir, token_fn, limit=None):
     aggregate = Counter()
     count_fn = lambda x: file_counts(x, token_fn)
     with ProcessPool() as p:
+        print('Using %d node(s)...' % p.nodes)
         for i, c in enumerate(p.uimap(count_fn, paths)):
             if limit and i > limit:
                 break

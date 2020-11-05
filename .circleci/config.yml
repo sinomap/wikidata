@@ -1,36 +1,50 @@
 version: 2.1
+commands:
+  deps:
+    steps:
+      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2 mecab
+      - run: pip install -r requirements.txt
+  compute-freqs:
+    parameters:
+      lang:
+        type: string
+    steps:
+      - run: ./compute-freqs.sh <<parameters.lang>> download
+      - run: ./compute-freqs.sh <<parameters.lang>> bunzip
+      - run: ./compute-freqs.sh <<parameters.lang>> extract
+      - run: ./compute-freqs.sh <<parameters.lang>> compute
+      - run: shopt -s globstar && cp out/**/*.json <<parameters.lang>>-wf.json
+      - store_artifacts:
+          path: <<parameters.lang>>-wf.json
 jobs:
   ja:
     docker:
       - image: circleci/python:3.8.5
     steps:
       - checkout
-      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2 mecab
-      - run: pip install -r requirements.txt
+      - deps
       - run: python -m unidic download 1.0.2
-      - run: ./compute-freqs.sh jawiki/20200820 download
-      - run: ./compute-freqs.sh jawiki/20200820 bunzip
-      - run: ./compute-freqs.sh jawiki/20200820 extract
-      - run: ./compute-freqs.sh jawiki/20200820 compute
-      - run: shopt -s globstar && cp out/**/*.json jwf.json
-      - store_artifacts:
-          path: jwf.json
+      - compute-freqs:
+          lang: ja
   vi:
     docker:
       - image: circleci/python:3.8.5
     steps:
       - checkout
-      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2
-      - run: pip install -r requirements.txt
-      - run: ./compute-freqs.sh viwiki/20200820 download
-      - run: ./compute-freqs.sh viwiki/20200820 bunzip
-      - run: ./compute-freqs.sh viwiki/20200820 extract
-      - run: ./compute-freqs.sh viwiki/20200820 compute
-      - run: shopt -s globstar && cp out/**/*.json vwf.json
-      - store_artifacts:
-          path: vwf.json
+      - deps
+      - compute-freqs:
+          lang: vi
+  sg:
+    docker:
+      - image: circleci/python:3.8.5
+    steps:
+      - checkout
+      - deps
+      - compute-freqs:
+          lang: sg
 workflows:
   all:
     jobs:
       - ja
       - vi
+      - sg

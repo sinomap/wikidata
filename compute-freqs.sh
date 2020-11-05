@@ -15,7 +15,7 @@ _md5() {
 _bunzip() {
   if type pbzip2 &>/dev/null; then
     echo "Using pbzip2..." >&2
-    pbzip2 -d
+    pbzip2 -p2 -d
   else
     echo "Using bzip2..." >&2
     bzip2 -d
@@ -72,7 +72,7 @@ extract() {
   local extract_path="$2"
 
   echo "Extracting articles..."
-  vendor/WikiExtractor.py --no_templates --json -o "$extract_path" "$xml_path" 2>&1 \
+  vendor/WikiExtractor.py --processes 2 --no_templates --json -o "$extract_path" "$xml_path" 2>&1 \
     | egrep -v "INFO: [0-9]+"
 }
 

@@ -53,10 +53,13 @@ jobs:
       - checkout
       - attach_workspace:
           at: out
+      - run: for file in out/*; do mv "$file" "${file/.json/-$CIRCLE_TAG.json}"; done
       - github-release/create:
           tag: $CIRCLE_TAG
           title: Version $CIRCLE_TAG
-          description: This release is version $CIRCLE_TAG.
+          description: >
+            This release is version $CIRCLE_TAG. Build details are available
+            [here]($CIRCLE_BUILD_URL).
           file-path: out
 workflows:
   release:

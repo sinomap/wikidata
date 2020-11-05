@@ -90,10 +90,13 @@ compress() {
   local out_path="$1"
 
   echo "Compressing output..."
+  local tag="${CIRCLE_TAG:-latest}"
+  local artifact_path=${out_path/.json/-$tag.json}
+  cp "$out_path" "$artifact_path"
+  zip --junk-paths "$artifact_path.zip" "$artifact_path"
   local checksum
-  zip "$out_path.zip" "$out_path"
-  _md5 "$out_path.zip" checksum
-  echo "$checksum" > "$out_path.zip.md5"
+  _md5 "$artifact_path.zip" checksum
+  echo "$checksum" > "$artifact_path.zip.md5"
 }
 
 parse-arg() {
@@ -134,6 +137,8 @@ case "$cmd" in
     ;;&
   compute|all)
     compute-freqs "$lang" "$extract_path" "$out_path"
+    ;;
+  artifacts)
     compress "$out_path"
     ;;
   download|bunzip|extract)

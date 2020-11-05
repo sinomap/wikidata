@@ -20,6 +20,7 @@ commands:
       - run: ./compute-freqs.sh <<parameters.lang>> bunzip
       - run: ./compute-freqs.sh <<parameters.lang>> extract
       - run: ./compute-freqs.sh <<parameters.lang>> compute
+      - run: ./compute-freqs.sh <<parameters.lang>> artifacts
       - persist_to_workspace:
           root: out
           paths:
@@ -53,7 +54,6 @@ jobs:
       - checkout
       - attach_workspace:
           at: out
-      - run: for file in out/*; do mv "$file" "${file/.json/-$CIRCLE_TAG.json}"; done
       - github-release/create:
           tag: $CIRCLE_TAG
           title: Version $CIRCLE_TAG

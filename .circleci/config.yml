@@ -11,6 +11,12 @@ executors:
   python:
     docker:
       - image: circleci/python:3.8.5
+  python-mysql:
+    docker:
+      - image: circleci/python:3.8.5
+      - image: mariadb:10.5.7
+        environment:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
 commands:
   deps:
     steps:
@@ -68,16 +74,19 @@ jobs:
       - freqs:
           lang: sg
   bs-dict:
-    docker:
-      - image: circleci/python:3.8.5
-      - image: mariadb:10.5.7
-        environment:
-          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    executor: python-mysql
     steps:
       - checkout
       - deps
       - dict:
           lang: bs
+  vi-dict:
+    executor: python-mysql
+    steps:
+      - checkout
+      - deps
+      - dict:
+          lang: vi
   gh-release:
     executor: github-release/default
     steps:
@@ -96,6 +105,7 @@ workflows:
     jobs:
       - sg
       - bs-dict
+      - vi-dict
   release:
     jobs:
       - ja:

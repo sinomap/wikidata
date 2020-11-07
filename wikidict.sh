@@ -25,12 +25,12 @@ shift
 parse-args dumpspec category "$@"
 
 # Multiple languages may use the same dumpspec
-base_tmp_dir="tmp/$dumpspec/$lang"
+base_tmp_dir="tmp/$dumpspec"
 xml_path="$base_tmp_dir/dump.xml"
 xml_bz2_path="$xml_path.bz2"
 sql_path="$base_tmp_dir/links.sql"
 sql_gz_path="$sql_path.gz"
-id_path="$base_tmp_dir/ids"
+id_path="$base_tmp_dir/$lang/ids"
 db_name="${dumpspec/\//_}"
 out_path="out/$lang-dict.json"
 
@@ -57,6 +57,7 @@ case "$cmd" in
   extract|all)
     echo "Extracting articles with category $category..."
     query="select cl_from from categorylinks where cl_to = '$category'"
+    mkdir -p "$(dirname "$id_path")"
     _mysql -D "$db_name" -N -e "$query" > "$id_path"
     mkdir -p "$(dirname "$out_path")"
     ./dictionary.py "$id_path" "$xml_path" "$out_path"

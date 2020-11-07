@@ -1,9 +1,7 @@
 #! /usr/bin/env python
 from collections import defaultdict
 
-import lxml.etree as ET
-from mwtemplates import TemplateEditor
-
+from xml.etree import ElementTree as ET
 
 def load_ids(path):
     with open(path) as f:
@@ -16,18 +14,20 @@ def load_ids(path):
 def load_pages(ids_path, xml_path):
     ret = {}
     ids = load_ids(ids_path)
-    # TODO: Flag entries with multiple VN etymologies, Non-Sino readings
     for event, el in ET.iterparse(xml_path):
-        e = el
-        if ET.QName(e).localname != 'page':
+        if not el.tag.endswith('page'):
             continue
-        _id = int(e.find('{*}id').text)
+        _id = int(el.find('{*}id').text)
         if  _id in ids:
-            title = e.find('{*}title').text
-            text = e.find('./{*}revision/{*}text').text
+            title = el.find('{*}title').text
+            text = el.find('./{*}revision/{*}text').text
             ret[title] = text
             if len(ret) % 100 == 0:
                 print('Processed %05d pages out of %05d' % (len(ret), len(ids)))
+        # Note that iterparse won't free elements as it goes by default.
+        # Could, probably be more aggressive, but this is sufficient to keep
+        # memory usage reasonable.
+        el.clear()
     return ret
 
 

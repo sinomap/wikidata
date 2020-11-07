@@ -1,5 +1,10 @@
 version: 2.1
-anchors: &tag-filter {filters: {tags: {only: /.*/}}}
+anchors: &tag-filter
+  filters:
+    tags:
+      only: /.*/
+    branches:
+      ignore: /.*/
 orbs:
   github-release: h-matsuo/github-release@0.1.3
 executors:
@@ -9,7 +14,7 @@ executors:
 commands:
   deps:
     steps:
-      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2 mecab
+      - run: sudo apt-get update; sudo apt-get install -y pv pbzip2 mecab mariadb-client
       - run: pip install -r requirements.txt
   freqs:
     parameters:
@@ -63,7 +68,11 @@ jobs:
       - freqs:
           lang: sg
   bs-dict:
-    executor: python
+    docker:
+      - image: circleci/python:3.8.5
+      - image: mariadb:10.5.7
+        environment:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "true"
     steps:
       - checkout
       - deps
@@ -83,7 +92,7 @@ jobs:
             [here]($CIRCLE_BUILD_URL).
           file-path: out
 workflows:
-  dict:
+  test:
     jobs:
       - sg
       - bs-dict

@@ -34,6 +34,9 @@ id_path="$base_tmp_dir/ids"
 db_name="${dumpspec/\//_}"
 out_path="out/$lang-dict.json"
 
+_mysql() {
+  mysql -u root -h 127.0.0.1 -P 3306 "$@"
+}
 
 case "$cmd" in
   download|all)
@@ -48,13 +51,14 @@ case "$cmd" in
     ;;&
   load|all)
     echo "Loading $sql_path..."
-    mysql -u root -e "DROP DATABASE IF EXISTS $db_name; CREATE DATABASE $db_name;"
-    pv "$sql_path" | mysql -u root -D "$db_name"
+    _mysql -e "DROP DATABASE IF EXISTS $db_name; CREATE DATABASE $db_name;"
+    pv "$sql_path" | _mysql -D "$db_name"
     ;;&
   extract|all)
     echo "Extracting articles with category $category..."
     query="select cl_from from categorylinks where cl_to = '$category'"
-    mysql -u root -D "$db_name" -N -e "$query" > "$id_path"
+    _mysql -D "$db_name" -N -e "$query" > "$id_path"
+    mkdir -p "$(dirname "$out_path")"
     ./dictionary.py "$id_path" "$xml_path" "$out_path"
     ;;&
   artifacts|all)

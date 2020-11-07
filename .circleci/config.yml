@@ -51,7 +51,16 @@ commands:
           paths:
             - "*.zip*"
 jobs:
-  ja:
+  smoketest:
+    executor: python-mysql
+    steps:
+      - checkout
+      - deps
+      - freqs:
+          lang: sg
+      - dict:
+          lang: bs
+  ja-freqs:
     executor: python
     steps:
       - checkout
@@ -59,27 +68,13 @@ jobs:
       - run: python -m unidic download 1.0.2
       - freqs:
           lang: ja
-  vi:
+  vi-freqs:
     executor: python
     steps:
       - checkout
       - deps
       - freqs:
           lang: vi
-  sg:
-    executor: python
-    steps:
-      - checkout
-      - deps
-      - freqs:
-          lang: sg
-  bs-dict:
-    executor: python-mysql
-    steps:
-      - checkout
-      - deps
-      - dict:
-          lang: bs
   vi-dict:
     executor: python-mysql
     steps:
@@ -103,17 +98,18 @@ jobs:
 workflows:
   test:
     jobs:
-      - sg
-      - bs-dict
-      - vi-dict
+      - smoketest
   release:
     jobs:
-      - ja:
+      - ja-freqs:
           <<: *tag-filter
-      - vi:
+      - vi-freqs:
+          <<: *tag-filter
+      - vi-dict:
           <<: *tag-filter
       - gh-release:
           <<: *tag-filter
           requires:
-            - ja
-            - vi
+            - ja-freqs
+            - vi-freqs
+            - vi-dict

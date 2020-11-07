@@ -11,16 +11,30 @@ commands:
     steps:
       - run: sudo apt-get update; sudo apt-get install -y pv pbzip2 mecab
       - run: pip install -r requirements.txt
-  compute-freqs:
+  freqs:
     parameters:
       lang:
         type: string
     steps:
-      - run: ./compute-freqs.sh <<parameters.lang>> download
-      - run: ./compute-freqs.sh <<parameters.lang>> bunzip
-      - run: ./compute-freqs.sh <<parameters.lang>> extract
-      - run: ./compute-freqs.sh <<parameters.lang>> compute
-      - run: ./compute-freqs.sh <<parameters.lang>> artifacts
+      - run: ./wikifreqs.sh download <<parameters.lang>>
+      - run: ./wikifreqs.sh bunzip <<parameters.lang>>
+      - run: ./wikifreqs.sh extract <<parameters.lang>>
+      - run: ./wikifreqs.sh compute <<parameters.lang>>
+      - run: ./wikifreqs.sh artifacts <<parameters.lang>>
+      - persist_to_workspace:
+          root: out
+          paths:
+            - "*.zip*"
+  dict:
+    parameters:
+      lang:
+        type: string
+    steps:
+      - run: ./wikidict.sh download <<parameters.lang>>
+      - run: ./wikidict.sh bunzip <<parameters.lang>>
+      - run: ./wikidict.sh load <<parameters.lang>>
+      - run: ./wikidict.sh extract <<parameters.lang>>
+      - run: ./wikidict.sh artifacts <<parameters.lang>>
       - persist_to_workspace:
           root: out
           paths:
@@ -32,22 +46,29 @@ jobs:
       - checkout
       - deps
       - run: python -m unidic download 1.0.2
-      - compute-freqs:
+      - freqs:
           lang: ja
   vi:
     executor: python
     steps:
       - checkout
       - deps
-      - compute-freqs:
+      - freqs:
           lang: vi
   sg:
     executor: python
     steps:
       - checkout
       - deps
-      - compute-freqs:
+      - freqs:
           lang: sg
+  bs-dict:
+    executor: python
+    steps:
+      - checkout
+      - deps
+      - dict:
+          lang: bs
   gh-release:
     executor: github-release/default
     steps:
@@ -62,6 +83,10 @@ jobs:
             [here]($CIRCLE_BUILD_URL).
           file-path: out
 workflows:
+  dict:
+    jobs:
+      - sg
+      - bs-dict
   release:
     jobs:
       - ja:

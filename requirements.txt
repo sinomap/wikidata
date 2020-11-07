@@ -5,7 +5,9 @@ fugashi==1.0.5
 idna==2.10
 jedi==0.17.2
 joblib==0.17.0
+lxml==4.6.1
 multiprocess==0.70.10
+mwtemplates==0.4.0
 numpy==1.19.3
 parso==0.7.1
 pathos==0.2.6

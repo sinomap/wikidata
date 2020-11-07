@@ -1,7 +1,3 @@
-#! /usr/bin/env bash
-
-set -euo pipefail
-
 _md5() {
   local path="$1"
   local -n _checksum="$2"
@@ -23,19 +19,29 @@ _bunzip() {
 }
 
 file-data() {
-  local dumpspec="$1"
-  local -n _file_url="$2"
-  local -n _file_md5="$3"
+  local filedata_filter="$1"
+  local dumpspec="$2"
+  local -n _file_url="$3"
+  local -n _file_md5="$4"
 
   echo "Fetching file metadata..."
   local base_url="https://dumps.wikimedia.org"
   # .articlesmultistreamdump is for smaller wikis (used for quick testing) that don't have a
   # recombined version
-  local filedata_filter='.jobs | (.articlesmultistreamdumprecombine // .articlesmultistreamdump)
-                         | .files | to_entries[] | select(.key | endswith(".xml.bz2")).value'
   local data="$(curl -sSL "$base_url/$dumpspec/dumpstatus.json" | jq "$filedata_filter")"
   _file_md5="$(jq -r '.md5' <<< "$data")"
   _file_url="$base_url/$(jq -r '.url' <<< "$data" | sed 's_^/__')"
+}
+
+xml-file-data() {
+  local filter='.jobs | (.articlesmultistreamdumprecombine // .articlesmultistreamdump)
+                | .files | to_entries[] | select(.key | endswith(".xml.bz2")).value'
+  file-data "$filter" "$@"
+}
+
+sql-file-data() {
+  local filter='.jobs.categorylinkstable.files | to_entries[0].value'
+  file-data "$filter" "$@"
 }
 
 download() {
@@ -55,16 +61,20 @@ download() {
   fi
 }
 
-bunzip() {
-  local bz2_path="$1"
-  local xml_path="$2"
+pv-bunzip() {
+  local in_path="$1"
+  local out_path="$2"
 
-  echo "Decompressing bz2 file..."
-  if type pv &>/dev/null; then
-    pv "$bz2_path" | _bunzip > "$xml_path"
-  else
-    _bunzip < "$bz2_path" > "$xml_path"
-  fi
+  echo "Decompressing $in_path..."
+  pv "$in_path" | _bunzip > "$out_path"
+}
+
+pv-gunzip() {
+  local in_path="$1"
+  local out_path="$2"
+
+  echo "Decompressing $in_path..."
+  pv "$in_path" | gunzip > "$out_path"
 }
 
 extract() {
@@ -99,53 +109,3 @@ compress() {
   echo "$checksum" > "$artifact_path.zip.md5"
 }
 
-parse-arg() {
-  local arg="$1"
-  local -n _dumpspec="$2"
-  if [[ $arg =~ .*wiki/[0-9]+ ]]; then
-    _dumpspec="$arg"
-    return
-  elif _dumpspec="$(jq -er ".$arg" < manifest.json)"; then
-    return
-  else
-    echo "Invalid dumpspec: $arg"
-    return 1
-  fi
-}
-
-parse-arg "$1" dumpspec
-cmd="${2:-all}"
-
-lang="${dumpspec:0:2}"
-base_tmp_dir="tmp/$dumpspec"
-xml_path="$base_tmp_dir/dump.xml"
-bz2_path="$xml_path.bz2"
-extract_path="$base_tmp_dir/extracted"
-out_path="out/$lang-wf.json"
-
-
-case "$cmd" in
-  download|all)
-    file-data "$dumpspec" file_url file_md5
-    download "$file_url" "$file_md5" "$bz2_path"
-    ;;&
-  bunzip|all)
-    bunzip "$bz2_path" "$xml_path"
-    ;;&
-  extract|all)
-    extract "$xml_path" "$extract_path"
-    ;;&
-  compute|all)
-    compute-freqs "$lang" "$extract_path" "$out_path"
-    ;;
-  artifacts)
-    compress "$out_path"
-    ;;
-  download|bunzip|extract)
-    exit 0
-    ;;
-  *)
-    echo "Unknown command: $cmd"
-    exit 1
-    ;;
-esac
